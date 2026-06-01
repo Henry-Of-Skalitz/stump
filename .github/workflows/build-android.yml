@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permite disparar manualmente pela aba Actions
+
+jobs:
+  android:
+    runs-on: ubuntu-latest # 7 GB RAM, grátis para repos públicos
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ativar Yarn
+        run: corepack enable
+
+      # Cache do Gradle — builds subsequentes ficam muito mais rápidos
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Instalar dependências
+        run: yarn install
+
+      - name: Expo Prebuild (gera pasta android/)
+        working-directory: apps/expo
+        env:
+          EXPO_NO_TELEMETRY: 1
+        run: npx expo prebuild --platform android --clean --non-interactive
+
+      # O app.config.ts pede 4 GB; reduzimos para caber nos 7 GB do runner
+      - name: Ajustar memória do Gradle
+        working-directory: apps/expo/android
+        run: |
+          echo "" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+
+      - name: Compilar APK (debug)
+        working-directory: apps/expo/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # O APK fica disponível para download por 14 dias
+      - name: Upload do APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: stump-debug
+          path: apps/expo/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
