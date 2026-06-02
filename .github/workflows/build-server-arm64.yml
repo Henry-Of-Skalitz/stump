@@ -1,0 +1,42 @@
+name: Build Server ARM64
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  server-arm64:
+    runs-on: ubuntu-24.04-arm # runner ARM64 nativo — grátis para repos públicos
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-arm64-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-arm64-
+
+      - name: Instalar musl toolchain
+        run: sudo apt-get install -y musl-tools
+
+      - name: Build release
+        run: cargo build --release --target aarch64-unknown-linux-musl -p stump_server
+
+      - name: Upload do binário
+        uses: actions/upload-artifact@v4
+        with:
+          name: stump-server-arm64
+          path: target/aarch64-unknown-linux-musl/release/stump_server
+          retention-days: 14
