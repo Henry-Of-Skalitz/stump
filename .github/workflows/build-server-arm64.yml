@@ -13,10 +13,12 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      # Esta Action lê o rust-toolchain.toml do repositório automaticamente 
+      # e adiciona o target solicitado diretamente na versão correta do Rust.
       - name: Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          targets: aarch64-unknown-linux-musl
+          target: aarch64-unknown-linux-musl
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -32,6 +34,11 @@ jobs:
         run: sudo apt-get install -y musl-tools
 
       - name: Build release
+        env:
+          # Variáveis necessárias para guiar o compilador C (cc) e o linker 
+          # a usarem o musl-gcc fornecido pelo musl-tools no Ubuntu.
+          CC_aarch64_unknown_linux_musl: musl-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
         run: cargo build --release --target aarch64-unknown-linux-musl -p stump_server
 
       - name: Upload do binário
