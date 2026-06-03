@@ -43,6 +43,9 @@ jobs:
         with:
           targets: aarch64-unknown-linux-gnu
 
+      - name: Verify Rust target
+        run: rustup target list --installed | grep aarch64-unknown-linux-gnu || rustup target add aarch64-unknown-linux-gnu
+
       - name: Install cross-compile toolchain
         run: |
           sudo apt-get update
