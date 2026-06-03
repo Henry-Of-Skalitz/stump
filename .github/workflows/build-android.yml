@@ -1,4 +1,4 @@
-name: Build Android Standalone APK
+name: Build Android Standalone APK Working
 
 on:
   workflow_dispatch: # Permite iniciar manualmente no GitHub
